@@ -1,4 +1,4 @@
-# Werewolf Rhythm Demo
+﻿# Werewolf Rhythm Demo
 
 A comedic four-lane rhythm game where muscular, goblin-like werewolves descend
 toward a moonlit village. Hit the correct lanes, survive HOLD enemies, build
@@ -8,7 +8,7 @@ your score, and trigger a giant red warehouse AGV sweep every 50 points.
 
 ## Download the Windows Demo
 
-[Download the latest Windows demo](REPLACE_WITH_GITHUB_LATEST_RELEASE_LINK)
+[Download the latest Windows demo](https://github.com/MarcyChen-ruixin/werewolf-rhythm-demo/releases/latest)
 
 1. Download `WerewolfRhythm-Demo-Windows-v0.1.0.zip` from GitHub Releases.
 2. Extract the **entire** archive (keep all files together).
@@ -38,7 +38,7 @@ Screenshot placeholders (replace with public sanitized captures):
 - Recurring red AGV reward every **50** score points (large, slow sweep)
 - Pause, mute, credits, Results restart with countdown
 - Silent-mode fallback if audio cannot load
-- Offline play — no account, no analytics
+- Offline play 鈥?no account, no analytics
 
 ## Controls
 
@@ -69,7 +69,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the in-game Credits scr
 
 Every **50** score points, a large red warehouse AGV slowly sweeps left to right
 and clears up to one eligible enemy per lane. AGV clears increase Defeated /
-AGV Cleared and **do not** add score. Milestones queue one at a time (50, 100, 150, …).
+AGV Cleared and **do not** add score. Milestones queue one at a time (50, 100, 150, 鈥?.
 
 ## Installation from source
 
