@@ -1,0 +1,34 @@
+# Git
+.ignore
+.git/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Local / OS
+.DS_Store
+Thumbs.db
+*.log
+logs/
+settings.json
+
+# Build artifacts (distribute via GitHub Releases, not the repo tree)
+build/
+dist/
+release_assets/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Private / Steam leftovers (never commit)
+steam_upload/
+store_submission/
+*.vdf
+steam_appid.txt
