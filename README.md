@@ -8,9 +8,9 @@ your score, and trigger a giant red warehouse AGV sweep every 50 points.
 
 ## Download the Windows Demo
 
-[Download the latest Windows demo](https://github.com/MarcyChen-ruixin/werewolf-rhythm-demo/releases/latest)
+[Download the latest Windows demo](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/latest)
 
-1. Download `WerewolfRhythm-Demo-Windows-v0.1.0.zip` from GitHub Releases.
+1. Download [`WerewolfRhythm-Demo-Windows-v0.1.0.zip`](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/download/v0.1.0-demo/WerewolfRhythm-Demo-Windows-v0.1.0.zip) from GitHub Releases.
 2. Extract the **entire** archive (keep all files together).
 3. Run `WerewolfRhythmDemo.exe`.
 4. No installation or Python runtime is required.
@@ -20,15 +20,18 @@ your score, and trigger a giant red warehouse AGV sweep every 50 points.
 
 Choose the build that matches your Mac:
 
-| Mac type | How to tell | Download (GitHub Releases) |
+| Mac type | How to tell | Download |
 | --- | --- | --- |
-| Apple Silicon | Apple menu → About This Mac → Chip (M1/M2/M3/M4…) | `WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip` |
-| Intel | Apple menu → About This Mac → Processor (Intel) | `WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip` |
+| Apple Silicon (M1/M2/M3/M4) | Apple menu → About This Mac → Chip | [Apple Silicon ZIP](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/download/v0.1.0-demo/WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip) |
+| Intel (older Macs) | Apple menu → About This Mac → Processor | [Intel ZIP](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/download/v0.1.0-demo/WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip) |
 
-Placeholder release links (replace with the published asset URLs after upload):
+Direct links:
 
-- Apple Silicon Mac download: see GitHub Releases → `WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip`
-- Intel Mac download: see GitHub Releases → `WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip`
+- [Apple Silicon Mac download](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/download/v0.1.0-demo/WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip)
+- [Intel Mac download](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/download/v0.1.0-demo/WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip)
+- [Latest release page](https://github.com/MarcyChen-ruixin/wolfwolf-rhythm-demo/releases/latest)
+
+Download only from the official GitHub repository above.
 
 ### Installation (macOS)
 
