@@ -1,0 +1,7 @@
+# macOS build / runtime dependencies for Werewolf Rhythm Demo.
+# Install inside a clean virtual environment on Darwin only.
+#
+# Do not add Windows-only packages (pywin32, etc.).
+
+pygame==2.6.1
+pyinstaller==6.11.1

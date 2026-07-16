@@ -1,0 +1,183 @@
+name: Build macOS Demo
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*-demo"
+  pull_request:
+    paths:
+      - "**.py"
+      - "assets/**"
+      - "packaging/**"
+      - "requirements-macos.txt"
+      - "build_macos.sh"
+      - ".github/workflows/build-macos.yml"
+
+permissions:
+  contents: read
+
+env:
+  SDL_VIDEODRIVER: dummy
+  SDL_AUDIODRIVER: dummy
+  FORCE_COLOR: "0"
+
+jobs:
+  apple-silicon:
+    name: macOS Apple Silicon (arm64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Print environment
+        run: |
+          set -euo pipefail
+          echo "macOS: $(sw_vers -productVersion)"
+          echo "uname -m: $(uname -m)"
+          python -c "import platform,sys; print(sys.version); print('machine=', platform.machine())"
+          test "$(uname -m)" = "arm64"
+
+      - name: Install requirements
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-macos.txt
+
+      - name: Public release validation (source tree)
+        run: python tools/validate_release_package.py .
+
+      - name: Unit / state tests
+        run: |
+          set -euo pipefail
+          python tools/test_agv_reward.py
+          python tools/validate_chart.py
+          python tools/test_restart_cycle.py
+
+      - name: Build macOS app
+        run: |
+          set -euo pipefail
+          chmod +x build_macos.sh
+          ./build_macos.sh
+
+      - name: Inspect .app + architecture
+        run: |
+          set -euo pipefail
+          APP="dist/Werewolf Rhythm Demo.app"
+          EXE="${APP}/Contents/MacOS/WerewolfRhythmDemo"
+          test -d "${APP}"
+          test -d "${APP}/Contents/MacOS"
+          test -d "${APP}/Contents/Resources"
+          test -f "${APP}/Contents/Info.plist"
+          test -x "${EXE}"
+          file "${EXE}"
+          lipo -info "${EXE}"
+          file "${EXE}" | grep -q arm64
+          lipo -info "${EXE}" | grep -q arm64
+          # Reject Intel-only markers on the main executable
+          if lipo -info "${EXE}" 2>/dev/null | grep -q x86_64; then
+            echo "ERROR: x86_64 slice found in Apple Silicon build" >&2
+            exit 1
+          fi
+          codesign --verify --deep --strict --verbose=2 "${APP}"
+
+      - name: Packaged self-test
+        run: |
+          set -euo pipefail
+          "dist/Werewolf Rhythm Demo.app/Contents/MacOS/WerewolfRhythmDemo" --self-test
+
+      - name: Validate packaged app tree
+        run: python tools/validate_release_package.py "dist/Werewolf Rhythm Demo.app"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-AppleSilicon-Demo
+          path: |
+            dist/release/WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip
+            dist/release/WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.sha256
+          if-no-files-found: error
+
+  intel:
+    name: macOS Intel (x86_64)
+    runs-on: macos-15-intel
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Print environment
+        run: |
+          set -euo pipefail
+          echo "macOS: $(sw_vers -productVersion)"
+          echo "uname -m: $(uname -m)"
+          python -c "import platform,sys; print(sys.version); print('machine=', platform.machine())"
+          test "$(uname -m)" = "x86_64"
+
+      - name: Install requirements
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-macos.txt
+
+      - name: Public release validation (source tree)
+        run: python tools/validate_release_package.py .
+
+      - name: Unit / state tests
+        run: |
+          set -euo pipefail
+          python tools/test_agv_reward.py
+          python tools/validate_chart.py
+          python tools/test_restart_cycle.py
+
+      - name: Build macOS app
+        run: |
+          set -euo pipefail
+          chmod +x build_macos.sh
+          ./build_macos.sh
+
+      - name: Inspect .app + architecture
+        run: |
+          set -euo pipefail
+          APP="dist/Werewolf Rhythm Demo.app"
+          EXE="${APP}/Contents/MacOS/WerewolfRhythmDemo"
+          test -d "${APP}"
+          test -d "${APP}/Contents/MacOS"
+          test -d "${APP}/Contents/Resources"
+          test -f "${APP}/Contents/Info.plist"
+          test -x "${EXE}"
+          file "${EXE}"
+          lipo -info "${EXE}"
+          file "${EXE}" | grep -q x86_64
+          lipo -info "${EXE}" | grep -q x86_64
+          if lipo -info "${EXE}" 2>/dev/null | grep -q arm64; then
+            echo "ERROR: arm64 slice found in Intel build" >&2
+            exit 1
+          fi
+          codesign --verify --deep --strict --verbose=2 "${APP}"
+
+      - name: Packaged self-test
+        run: |
+          set -euo pipefail
+          "dist/Werewolf Rhythm Demo.app/Contents/MacOS/WerewolfRhythmDemo" --self-test
+
+      - name: Validate packaged app tree
+        run: python tools/validate_release_package.py "dist/Werewolf Rhythm Demo.app"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-Intel-Demo
+          path: |
+            dist/release/WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip
+            dist/release/WerewolfRhythm-Demo-macOS-Intel-v0.1.0.sha256
+          if-no-files-found: error

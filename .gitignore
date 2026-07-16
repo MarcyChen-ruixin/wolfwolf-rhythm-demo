@@ -21,6 +21,9 @@ settings.json
 build/
 dist/
 release_assets/
+.venv-macos/
+packaging/*.icns
+packaging/*.iconset/
 
 # IDE
 .idea/

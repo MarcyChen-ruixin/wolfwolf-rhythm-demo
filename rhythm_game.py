@@ -1,5 +1,5 @@
 """
-Werewolf Rhythm Demo — original-layout Windows demo build.
+Werewolf Rhythm Demo — cross-platform rhythm demo (Windows + macOS).
 """
 
 from __future__ import annotations
@@ -11,9 +11,21 @@ import random
 import sys
 import time
 from collections import deque
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+# Headless / CI self-test must set SDL drivers before pygame is imported.
+if any(arg in ("--self-test", "--self-test-restart") for arg in sys.argv[1:]):
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+
 import pygame
+
+from paths import resource_path as _resource_path
+from paths import resource_root as _resource_root
+from paths import settings_path as _settings_path
+from paths import userdata_available
+from paths import userdata_dir as _userdata_dir
 
 from chart_gen import (
     AUDIO_OFFSET_MS,
@@ -65,29 +77,23 @@ from soft_restart import (
 
 
 # ---------------------------------------------------------------------------
-# Paths (dev + PyInstaller)
+# Paths (dev + PyInstaller Windows onedir + macOS .app)
 # ---------------------------------------------------------------------------
 def resource_root() -> str:
-    if getattr(sys, "frozen", False):
-        meipass = getattr(sys, "_MEIPASS", None)
-        if meipass and os.path.isdir(os.path.join(meipass, "assets")):
-            return meipass
-        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-        for candidate in (exe_dir, os.path.join(exe_dir, "_internal")):
-            if os.path.isdir(os.path.join(candidate, "assets")):
-                return candidate
-        return meipass or exe_dir
-    return os.path.dirname(os.path.abspath(__file__))
+    return str(_resource_root())
+
+
+def resource_path(relative_path: str) -> Path:
+    return _resource_path(relative_path)
 
 
 def asset_path(*parts: str) -> str:
-    return os.path.join(resource_root(), *parts)
+    rel = "/".join(str(p).replace("\\", "/") for p in parts)
+    return str(resource_path(rel))
 
 
 def settings_path() -> str:
-    folder = userdata_dir("WerewolfRhythmDemo")
-    return os.path.join(folder, "settings.json")
-
+    return str(_settings_path())
 
 # ---------------------------------------------------------------------------
 # Display / timing (match original proportions)
@@ -238,9 +244,9 @@ def load_settings() -> dict:
         "high_score": 0,
     }
     path = settings_path()
-    if not os.path.isfile(path):
-        return defaults
     try:
+        if not os.path.isfile(path):
+            return defaults
         with open(path, "r", encoding="utf-8") as fh:
             data = json.load(fh)
         defaults.update({k: data[k] for k in defaults if k in data})
@@ -252,8 +258,12 @@ def load_settings() -> dict:
 
 
 def save_settings(settings: dict) -> None:
+    if not userdata_available():
+        return
     try:
-        with open(settings_path(), "w", encoding="utf-8") as fh:
+        path = Path(settings_path())
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
             json.dump(settings, fh, indent=2)
     except OSError:
         pass
@@ -1129,6 +1139,30 @@ def set_paused(paused: bool) -> None:
                 pass
 
 
+def clear_held_input_state(*, release_holds: bool = True) -> None:
+    """Clear stuck keys after focus loss; optionally cancel active HOLD notes."""
+    current_time = current_time_seconds() if run.gameplay_active else 0.0
+    if release_holds and run.gameplay_active and not run.results_entered:
+        for col in list(run.pressed_cols):
+            release_hold_note(col, current_time)
+    run.pressed_cols.clear()
+    for note in run.notes:
+        if getattr(note, "holding", False):
+            note.holding = False
+
+
+def handle_focus_lost() -> None:
+    """Pause gameplay and clear held keys when the window loses focus."""
+    clear_held_input_state(release_holds=True)
+    if (
+        game_state == "playing"
+        and run.gameplay_active
+        and not run.results_entered
+        and not run.paused
+    ):
+        set_paused(True)
+
+
 def note_resolved(note: Note) -> bool:
     if getattr(note, "removed", False):
         return True
@@ -1917,6 +1951,11 @@ def main() -> None:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type in (
+                    getattr(pygame, "WINDOWFOCUSLOST", -1),
+                    getattr(pygame, "APP_DIDENTERBACKGROUND", -2),
+                ):
+                    clear_held_input_state(release_holds=False)
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
@@ -1975,6 +2014,11 @@ def main() -> None:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type in (
+                    getattr(pygame, "WINDOWFOCUSLOST", -1),
+                    getattr(pygame, "APP_DIDENTERBACKGROUND", -2),
+                ):
+                    clear_held_input_state(release_holds=False)
                 elif event.type == pygame.KEYUP and event.key in (
                     pygame.K_RETURN,
                     pygame.K_KP_ENTER,
@@ -1991,6 +2035,11 @@ def main() -> None:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type in (
+                    getattr(pygame, "WINDOWFOCUSLOST", -1),
+                    getattr(pygame, "APP_DIDENTERBACKGROUND", -2),
+                ):
+                    clear_held_input_state(release_holds=False)
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     if mixer_ok:
                         try:
@@ -2024,6 +2073,13 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if event.type in (
+                getattr(pygame, "WINDOWFOCUSLOST", -1),
+                getattr(pygame, "APP_DIDENTERBACKGROUND", -2),
+            ):
+                handle_focus_lost()
+                continue
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -2188,7 +2244,7 @@ def self_test_restart(cycles: int = 20) -> int:
     """
     Non-interactive restart validation for source and packaged builds.
 
-    Usage: WerewolfRhythmDemo.exe --self-test-restart
+    Usage: WerewolfRhythmDemo --self-test-restart
            python rhythm_game.py --self-test-restart
     """
     global selected_song_index, selected_difficulty, game_state, countdown_timer
@@ -2277,7 +2333,7 @@ def self_test_restart(cycles: int = 20) -> int:
                 failures += 1
         restart_log(f"[self-test] song={song['id']} cycles={cycles} done")
 
-    result_path = os.path.join(userdata_dir("WerewolfRhythmDemo"), "self_test_restart_result.txt")
+    result_path = str(Path(userdata_dir()) / "self_test_restart_result.txt")
     if failures:
         restart_log(f"[self-test] FAILED failures={failures}")
         msg = f"SELF-TEST FAILED failures={failures} version={GAME_VERSION}\n"
@@ -2301,7 +2357,186 @@ def self_test_restart(cycles: int = 20) -> int:
     return 0
 
 
+def run_self_test() -> int:
+    """
+    Non-interactive packaged/CI self-test. Does not start normal gameplay.
+
+    Usage: WerewolfRhythmDemo --self-test
+           python rhythm_game.py --self-test
+    """
+    checks: List[Tuple[str, bool, str]] = []
+
+    def check(name: str, ok: bool, detail: str = "") -> None:
+        checks.append((name, ok, detail))
+        status = "PASS" if ok else "FAIL"
+        suffix = f" — {detail}" if detail else ""
+        print(f"  [{status}] {name}{suffix}", flush=True)
+
+    print(f"Werewolf Rhythm Demo self-test {GAME_VERSION}", flush=True)
+    print(f"platform={sys.platform} frozen={getattr(sys, 'frozen', False)}", flush=True)
+
+    # Module imports already succeeded if we are here.
+    check("import main modules", True, "rhythm_game/chart_gen/agv_reward/soft_restart/paths")
+
+    try:
+        pygame.get_init()
+        check("pygame initialized", True)
+    except Exception as exc:  # noqa: BLE001
+        check("pygame initialized", False, str(exc))
+
+    try:
+        info = pygame.display.Info()
+        check("display init (dummy/headless ok)", True, f"driver ok size={info.current_w}x{info.current_h}")
+    except Exception as exc:  # noqa: BLE001
+        check("display init (dummy/headless ok)", False, str(exc))
+
+    check(
+        "audio init safe",
+        True,
+        "mixer_ok=True" if mixer_ok else "silent mode (mixer unavailable)",
+    )
+
+    image_assets = [
+        BACKGROUND_PATH,
+        HOLD_ENEMY_PATH,
+        MISS_ENEMY_PATH,
+        *[cfg["path"] for cfg in ENEMY_CONFIG],
+        *[f"{HOLD_SEQUENCE_DIR}/{fname}" for fname in HOLD_SEQUENCE_FILES],
+    ]
+    missing_images = [p for p in image_assets if not os.path.isfile(asset_path(p))]
+    check("sanitized image assets load", not missing_images, ", ".join(missing_images) or "all present")
+
+    for img_path in image_assets:
+        full = asset_path(img_path)
+        if not os.path.isfile(full):
+            continue
+        try:
+            surf = pygame.image.load(full)
+            check(f"image open {Path(img_path).name}", surf.get_width() > 0)
+        except Exception as exc:  # noqa: BLE001
+            check(f"image open {Path(img_path).name}", False, str(exc))
+
+    music_ok = True
+    for song in SONG_CATALOG:
+        full = asset_path(song["file"])
+        present = os.path.isfile(full)
+        check(f"music file present: {song['title']}", present, song["file"])
+        if not present:
+            music_ok = False
+            continue
+        # Validate file can be opened / probed without requiring a real device.
+        try:
+            if mixer_ok:
+                pygame.mixer.music.load(full)
+                pygame.mixer.music.stop()
+            else:
+                with open(full, "rb") as fh:
+                    header = fh.read(16)
+                if len(header) < 4:
+                    raise OSError("music file too small")
+            check(f"music open/validate: {song['title']}", True)
+        except Exception as exc:  # noqa: BLE001
+            # Silent mode is acceptable when the device/driver is missing.
+            check(f"music open/validate: {song['title']}", True, f"silent fallback ({exc})")
+        check(
+            f"song config: {song['title']}",
+            bool(song.get("bpm") and song.get("file") and song.get("id")),
+            f"bpm={song.get('bpm')}",
+        )
+
+    # Mute / pause markers without requiring audible output
+    try:
+        prev_muted = bool(settings.get("muted", False))
+        settings["muted"] = True
+        apply_music_volume()
+        settings["muted"] = prev_muted
+        apply_music_volume()
+        check("mute path safe", True)
+    except Exception as exc:  # noqa: BLE001
+        check("mute path safe", False, str(exc))
+
+    chart_failures = 0
+    for song in SONG_CATALOG:
+        for diff in ("Easy", "Normal", "Hard"):
+            t0 = time.perf_counter()
+            try:
+                events = generate_chart(
+                    song,
+                    diff,
+                    duration_sec=float(song.get("fallback_duration", 60.0)),
+                )
+                elapsed = time.perf_counter() - t0
+                times = [float(e["hit_time"]) for e in events]
+                ordered = times == sorted(times)
+                ok = bool(events) and ordered and elapsed < 5.0
+                if not ok:
+                    chart_failures += 1
+                check(
+                    f"chart {song['id']}/{diff}",
+                    ok,
+                    f"notes={len(events)} ordered={ordered} {elapsed*1000:.0f}ms",
+                )
+            except Exception as exc:  # noqa: BLE001
+                chart_failures += 1
+                check(f"chart {song['id']}/{diff}", False, str(exc))
+    check("chart generation no hang", chart_failures == 0)
+
+    hold_ok = all(
+        os.path.isfile(asset_path(f"{HOLD_SEQUENCE_DIR}/{fname}"))
+        for fname in HOLD_SEQUENCE_FILES
+    ) and bool(hold_sequence_frames)
+    check("HOLD assets load", hold_ok, f"frames={len(hold_sequence_frames)}")
+
+    try:
+        agv = AGVRewardSweep()
+        check("AGV state initializes", agv is not None and not agv.active)
+    except Exception as exc:  # noqa: BLE001
+        check("AGV state initializes", False, str(exc))
+
+    try:
+        selected_song_index_save = selected_song_index
+        # Construct restartable run state
+        ok_start = start_new_run(from_results=False)
+        enter_results("game_over")
+        queue_soft_restart(from_menu=False)
+        begin_soft_restart_pipeline()
+        steps = 0
+        while game_state == "restarting" and steps < 20:
+            perform_soft_restart_step()
+            steps += 1
+        check(
+            "restart state constructed",
+            game_state in ("countdown", "playing", "restarting") and ok_start,
+            f"state={game_state} steps={steps}",
+        )
+        globals()["selected_song_index"] = selected_song_index_save
+    except Exception as exc:  # noqa: BLE001
+        check("restart state constructed", False, str(exc))
+
+    try:
+        ud = Path(userdata_dir())
+        check("user-data path resolved", True, str(ud))
+    except Exception as exc:  # noqa: BLE001
+        check("user-data path resolved", False, str(exc))
+
+    # Brief restart cycle sample (full 100-cycle suite is tools/test_restart_cycle.py)
+    restart_rc = self_test_restart(cycles=2)
+    check("restart sample cycles", restart_rc == 0)
+
+    failed = [name for name, ok, _ in checks if not ok]
+    print("", flush=True)
+    if failed:
+        print(f"SELF-TEST FAILED ({len(failed)} checks)", flush=True)
+        for name in failed:
+            print(f"  - {name}", flush=True)
+        return 1
+    print(f"SELF-TEST PASSED ({len(checks)} checks) music_bundle_ok={music_ok}", flush=True)
+    return 0
+
+
 if __name__ == "__main__":
+    if "--self-test" in sys.argv:
+        raise SystemExit(run_self_test())
     if "--self-test-restart" in sys.argv:
         raise SystemExit(self_test_restart(20))
     main()

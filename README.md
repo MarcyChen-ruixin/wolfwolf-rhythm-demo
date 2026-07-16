@@ -16,6 +16,47 @@ your score, and trigger a giant red warehouse AGV sweep every 50 points.
 4. No installation or Python runtime is required.
 5. The game works fully offline.
 
+## Download for macOS
+
+Choose the build that matches your Mac:
+
+| Mac type | How to tell | Download (GitHub Releases) |
+| --- | --- | --- |
+| Apple Silicon | Apple menu → About This Mac → Chip (M1/M2/M3/M4…) | `WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip` |
+| Intel | Apple menu → About This Mac → Processor (Intel) | `WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip` |
+
+Placeholder release links (replace with the published asset URLs after upload):
+
+- Apple Silicon Mac download: see GitHub Releases → `WerewolfRhythm-Demo-macOS-AppleSilicon-v0.1.0.zip`
+- Intel Mac download: see GitHub Releases → `WerewolfRhythm-Demo-macOS-Intel-v0.1.0.zip`
+
+### Installation (macOS)
+
+1. Download the correct ZIP for your Mac.
+2. Extract the ZIP.
+3. Drag `Werewolf Rhythm Demo.app` into Applications if desired.
+4. Open the application.
+5. Keep all content inside the `.app` bundle intact.
+
+The current GitHub Demo is **ad-hoc signed and not notarized**.
+
+After attempting to open the app, macOS may show an unidentified-developer
+warning. Confirm the file came from the official GitHub repository. Then open
+**System Settings → Privacy & Security** and use **Open Anyway** only when you
+trust the downloaded file.
+
+Do not disable macOS security protections / Gatekeeper globally.
+
+macOS builds:
+
+- Work offline
+- Require no Python installation
+- Use keyboard controls only
+- Include no analytics, account system, or network services
+
+See [docs/MACOS_SIGNING.md](docs/MACOS_SIGNING.md) and
+[docs/MACOS_TEST_REPORT.md](docs/MACOS_TEST_REPORT.md).
+
 ## Gameplay preview
 
 Screenshot placeholders (replace with public sanitized captures):
@@ -38,7 +79,7 @@ Screenshot placeholders (replace with public sanitized captures):
 - Recurring red AGV reward every **50** score points (large, slow sweep)
 - Pause, mute, credits, Results restart with countdown
 - Silent-mode fallback if audio cannot load
-- Offline play 鈥?no account, no analytics
+- Offline play — no account, no analytics
 
 ## Controls
 
@@ -47,12 +88,17 @@ Screenshot placeholders (replace with public sanitized captures):
 | DFJK | Four rhythm lanes (Tab switches to ASKL) |
 | 1 / 2 / 3 | Select song |
 | F1 / F2 / F3 | Select difficulty |
-| Enter | Start |
+| Enter / Return | Start |
 | P | Pause / resume |
 | Esc | Return to menu / quit |
 | M | Mute |
-| Enter or R | Restart from Results |
+| Enter / Return or R | Restart from Results |
 | C | Credits (from menu) |
+
+On macOS, both the main Return key and the keypad Enter key are supported where
+practical. Rhythm lanes do not require Command, Control, or Option. Command-Q
+and the window close button quit cleanly; the game does not intercept system
+shortcuts for lane input.
 
 ## Songs and credits
 
@@ -69,13 +115,20 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and the in-game Credits scr
 
 Every **50** score points, a large red warehouse AGV slowly sweeps left to right
 and clears up to one eligible enemy per lane. AGV clears increase Defeated /
-AGV Cleared and **do not** add score. Milestones queue one at a time (50, 100, 150, 鈥?.
+AGV Cleared and **do not** add score. Milestones queue one at a time (50, 100, 150, …).
 
 ## Installation from source
 
 ```powershell
 python -m pip install -r requirements.txt
 python rhythm_game.py
+```
+
+On macOS:
+
+```bash
+python3 -m pip install -r requirements-macos.txt
+python3 rhythm_game.py
 ```
 
 Optional Windows rebuild:
@@ -86,16 +139,34 @@ Optional Windows rebuild:
 
 Output: `dist\WerewolfRhythmDemo\WerewolfRhythmDemo.exe`
 
-## Downloadable Windows build
+Optional macOS rebuild (must run on a Mac or GitHub-hosted macOS runner):
+
+```bash
+chmod +x build_macos.sh
+./build_macos.sh
+```
+
+Output: `dist/Werewolf Rhythm Demo.app` plus architecture-specific ZIP under
+`dist/release/`.
+
+## Downloadable builds
+
+### Windows
 
 The GitHub Release ZIP contains the full onedir package. Extract everything, then
 run `WerewolfRhythmDemo.exe`. Do not move the EXE alone without its companion files.
 
+### macOS
+
+Download the Apple Silicon or Intel ZIP, extract it, then open
+`Werewolf Rhythm Demo.app`. Separate native builds are provided (not Universal).
+
 ## Privacy
 
-Only local settings/high score are stored under:
+Only local settings/high score are stored:
 
-`%LOCALAPPDATA%\WerewolfRhythmDemo\settings.json`
+- Windows: `%LOCALAPPDATA%\WerewolfRhythmDemo\settings.json`
+- macOS: `~/Library/Application Support/Werewolf Rhythm Demo/settings.json`
 
 See [PRIVACY.md](PRIVACY.md).
 
@@ -107,13 +178,15 @@ See [ART_PROVENANCE.md](ART_PROVENANCE.md).
 
 ## Known limitations
 
-- Windows 10/11 64-bit demo only
+- Windows 10/11 64-bit and macOS (Apple Silicon + Intel) demos
 - Keyboard controls only (no claimed controller support)
-- Unsigned executable may show a Windows SmartScreen reputation warning
+- Unsigned Windows executable may show a SmartScreen reputation warning
+- macOS builds are ad-hoc signed and not notarized (manual Privacy & Security approval may be required)
 - No automatic updater
 - No online leaderboard
 - One escape currently ends the run (Game Over)
 - Screenshots in `docs/images/` may still be placeholders
+- Full interactive macOS GUI verification still requires physical Mac hardware
 
 ## Author
 

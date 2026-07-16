@@ -10,22 +10,25 @@ from __future__ import annotations
 import os
 import sys
 import time
-from typing import Callable, Optional, TextIO
+from pathlib import Path
+from typing import Optional, TextIO
+
+from paths import restart_log_path as _restart_log_path
+from paths import userdata_dir as _userdata_dir
 
 
 def userdata_dir(app_name: str = "WerewolfRhythmDemo") -> str:
-    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    folder = os.path.join(base, app_name)
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    """Return user-data directory as str for backward compatibility."""
+    return str(_userdata_dir(app_name if sys.platform == "win32" else None))
 
 
 def restart_log_path(*, frozen: bool, project_root: str) -> str:
-    if frozen:
-        return os.path.join(userdata_dir(), "restart_debug.log")
-    log_dir = os.path.join(project_root, "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    return os.path.join(log_dir, "restart_debug.log")
+    return str(
+        _restart_log_path(
+            frozen=frozen,
+            project_root=Path(project_root) if project_root else None,
+        )
+    )
 
 
 class RestartLogger:
@@ -35,6 +38,9 @@ class RestartLogger:
         self._fh: Optional[TextIO] = None
         if enabled:
             try:
+                parent = os.path.dirname(path)
+                if parent:
+                    os.makedirs(parent, exist_ok=True)
                 self._fh = open(path, "a", encoding="utf-8", buffering=1)
             except OSError:
                 self._fh = None
